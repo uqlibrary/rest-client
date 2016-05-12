@@ -1,6 +1,6 @@
 <?php
 
-namespace Terah\RestClient\ApiClient;
+namespace Terah\RestClient;
 
 use function Terah\Assert\Assert;
 use function Terah\Assert\Validate;
