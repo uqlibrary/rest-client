@@ -1,0 +1,40 @@
+{
+    "name": "terah/rest-client",
+    "description": "PHP client library for Restful Services.",
+    "keywords": [
+        "api",
+        "php"
+    ],
+    "homepage": "https://git.its.uq.edu.au/uqcullen/rest-client",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Terry Cullen",
+            "email": "terry@terah.com.au",
+            "homepage": "http://terah.com.au",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php" : ">=5.5.0",
+        "terah/fluent-assert": "1.*"
+    },
+    "require-dev": {
+        "phpunit/phpunit" : "4.*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Terah\\RestClient\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Terah\\RestClient\\Test\\": "tests"
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.0-dev"
+        }
+    }
+}
