@@ -1,66 +1,40 @@
-<?php
-
-namespace Terah\RestClient;
-
-use function Terah\Assert\Assert;
-use function Terah\Assert\Validate;
-
-
-class RestClient
-{
-    const FETCH             = 'GET';
-    const INSERT            = 'POST';
-    const UPDATE            = 'PUT';
-    const DELETE            = 'DELETE';
-
+<?php namespace Terah\RestClient; use function Terah\Assert\Assert; use function Terah\Assert\Validate; class RestClient {
+    const FETCH = 'GET';
+    const INSERT = 'POST';
+    const UPDATE = 'PUT';
+    const DELETE = 'DELETE';
     /** @var int $serviceUrl */
-    protected $serviceUrl   = null;
-
+    protected $serviceUrl = null;
     /** @var string $accessToken */
-    protected $accessToken  = null;
-
+    protected $accessToken = null;
     /** @var string $authHeader */
-    protected $authHeader   = 'X-Auth-Token';
-
+    protected $authHeader = 'X-Auth-Token';
     /** @var string $authHeader */
-    protected $metaHeader   = 'X-Auth-Meta';
-
+    protected $metaHeader = 'X-Auth-Meta';
     /** @var string $method */
-    protected $method       = 'GET';
-
+    protected $method = 'GET';
     /** @var string $format */
-    protected $format       = 'json';
-
+    protected $format = 'json';
     /** @var string $version */
-    protected $version      = '1.0';
-
+    protected $version = '1.0';
     /** @var array $headers */
-    protected $headers      = [];
-
+    protected $headers = [];
     /** @var array $data */
-    protected $data         = [];
-
-    /** @var bool  */
-    protected $verbose      = false;
-
+    protected $data = [];
+    /** @var bool */
+    protected $verbose = false;
     /** @var array */
-    protected $credentials  = [];
-
+    protected $credentials = [];
     /** @var resource */
-    protected $curlObj      = null;
-
+    protected $curlObj = null;
     /** @var string */
     protected $exceptionType = 'Terah\RestClient\RestException';
-
     /** @var null Used for error tracing */
-    protected $curlUrl      = null;
-
+    protected $curlUrl = null;
     /** @var mixed Data to be sent to the service */
-    protected $curlData     = null;
-
+    protected $curlData = null;
     /** @var RestResponse */
-    protected $response     = null;
-
+    protected $response = null;
     /**
      * @param string $serviceUrl
      * @param string $accessToken
@@ -72,13 +46,12 @@ class RestClient
     {
         Assert($serviceUrl)->notEmpty()->url('The service URL was not specified');
         Assert($accessToken)->nullOr()->notEmpty('The auth token was not specified');
-        $this->serviceUrl       = $serviceUrl;//preg_replace('/\/$/', '', $serviceUrl) . '/';
-        $this->accessToken      = $accessToken;
-        $this->authHeader       = ! is_null($authHeader) ? $authHeader : $this->authHeader;
+        $this->serviceUrl = $serviceUrl;//preg_replace('/\/$/', '', $serviceUrl) . '/';
+        $this->accessToken = $accessToken;
+        $this->authHeader = ! is_null($authHeader) ? $authHeader : $this->authHeader;
         $this->credentials($username, $password);
         $this->reset();
     }
-
     /**
      * @param $name
      * @param $value
@@ -90,7 +63,6 @@ class RestClient
         $this->headers[$name] = $value;
         return $this;
     }
-
     /**
      * @param array $headers
      *
@@ -104,7 +76,6 @@ class RestClient
         }
         return $this;
     }
-
     /**
      * @param array $data
      *
@@ -115,7 +86,6 @@ class RestClient
         $this->data = $data;
         return $this;
     }
-
     /**
      * @param null|string $username
      * @param null|string $password
@@ -128,21 +98,19 @@ class RestClient
         $this->credentials = [$username, $password];
         return $this;
     }
-
     /**
      * @return $this
      */
     public function reset()
     {
-        $this->data     = [];
-        $this->method   = 'GET';
-        $this->curlObj  = null;
+        $this->data = [];
+        $this->method = 'GET';
+        $this->curlObj = null;
         $this->response = null;
         $this->format('json');
         $this->header('X-Api-Version', '1.0');
         return $this;
     }
-
     /**
      * @param $method
      *
@@ -153,7 +121,6 @@ class RestClient
         $this->method = strtoupper($method);
         return $this;
     }
-
     /**
      * @param string $format
      *
@@ -164,7 +131,6 @@ class RestClient
         $this->format = ! in_array($format, ['json', 'xml', 'text', 'png', 'any']) ? 'json' : $format;
         return $this;
     }
-
     /**
      * @param $version
      *
@@ -175,7 +141,6 @@ class RestClient
         $this->version = $version;
         return $this;
     }
-
     /**
      * @param $verbose
      *
@@ -187,7 +152,6 @@ class RestClient
         $this->verbose = $verbose;
         return $this;
     }
-
     /**
      * @param $exception
      *
@@ -199,13 +163,13 @@ class RestClient
         $this->exceptionType = $exception;
         return $this;
     }
-
     /**
-     * @param $entity
+     * @param string $entity
+     * @param bool $returnResponse
      * @return mixed|null
      * @throws \Exception
      */
-    public function sendRequest($entity=null)
+    public function sendRequest($entity=null, $returnResponse=false)
     {
         $result = $this
             ->setCurlOpt(CURLOPT_URL, $this->getUrl($entity))
@@ -219,24 +183,23 @@ class RestClient
             ->setCurlOpt(CURLOPT_ENCODING, '')
             ->setCurlBasicAuth()
             ->setCurlCookies()
-            ->setCurlData($this->method,  $this->data, $this->format)
+            ->setCurlData($this->method, $this->data, $this->format)
             ->curlExec($this->format);
+        $response = $this->response->toArray();
         $this->reset();
-        return $result;
+        return $returnResponse ? $response : $result;
     }
-
     /**
      * @param int $opt
      * @param mixed $val
      * @return $this
      */
-    protected function setCurlOpt($opt, $val)
+    public function setCurlOpt($opt, $val)
     {
         $this->curlObj = is_null($this->curlObj) ? curl_init() : $this->curlObj;
         curl_setopt($this->curlObj, $opt, $val);
         return $this;
     }
-
     /**
      * @param string $method
      * @param array|string $data
@@ -260,14 +223,13 @@ class RestClient
             {
                 $xmlObj = new \SimpleXMLElement("<?xml version=\"1.0\"?><response></response>");
                 $this->arrayToXml($data, $xmlObj);
-                $this->curlData   = $xmlObj->asXML();
+                $this->curlData = $xmlObj->asXML();
             }
             return $this->setCurlOpt(CURLOPT_POST, true)->setCurlOpt(CURLOPT_POSTFIELDS, $this->curlData);
         }
         $this->curlData = is_array($data) ? http_build_query($data) : $data;
         return $this->setCurlOpt(CURLOPT_POST, true)->setCurlOpt(CURLOPT_POSTFIELDS, $this->curlData);
     }
-
     /**
      * @return $this|RestClient
      */
@@ -280,8 +242,6 @@ class RestClient
         }
         return $this;
     }
-
-
     /**
      * @return $this|RestClient
      */
@@ -294,7 +254,6 @@ class RestClient
         }
         return $this;
     }
-
     /**
      * @param array $data
      * @param \SimpleXMLElement $xmlObj
@@ -318,7 +277,6 @@ class RestClient
             $this->arrayToXml($value, $subnode);
         }
     }
-
     /**
      * @param string $format
      * @return mixed
@@ -332,15 +290,13 @@ class RestClient
             curl_error($this->curlObj),
             curl_errno($this->curlObj)
         );
-
         if ( $this->response->isError() )
         {
-            $exceptionType  = $this->exceptionType;
+            $exceptionType = $this->exceptionType;
             throw new $exceptionType($this->response->getNotification(), $this->response->getHttpStatusCode(), null, $this->response);
         }
         return $format === 'json' ? json_decode($this->response->body, false) : $this->response->body;
     }
-
     /**
      * @param string $response
      * @param int $httpStatusCode
@@ -350,18 +306,17 @@ class RestClient
      */
     protected function parseResponse($response, $httpStatusCode, $curlError, $curlErrorNo)
     {
-        list($headers, $body)       = $this->_parseHeadersAndBody($response);
-        $response                   = isset($headers[$this->metaHeader]) ? json_decode($headers[$this->metaHeader], true) : [];
-        $response                   = is_array($response) ? $response : [];
+        list($headers, $body) = $this->_parseHeadersAndBody($response);
+        $response = isset($headers[$this->metaHeader]) ? json_decode($headers[$this->metaHeader], true) : [];
+        $response = is_array($response) ? $response : [];
         unset($headers[$this->metaHeader]);
-        $response['headers']        = $headers;
-        $response['body']           = $body;
-        $response['status']         = $httpStatusCode;
-        $response['curlError']      = $curlError;
-        $response['curlErrorNo']    = $curlErrorNo;
+        $response['headers'] = $headers;
+        $response['body'] = $body;
+        $response['status'] = $httpStatusCode;
+        $response['curlError'] = $curlError;
+        $response['curlErrorNo'] = $curlErrorNo;
         return new RestResponse($response);
     }
-
     /**
      * @param $responseText
      * @return array
@@ -372,52 +327,49 @@ class RestClient
         {
             return [[], ''];
         }
-        list($headerData, $body)    = explode("\r\n\r\n", $responseText, 2);
-        $headerData                 = explode("\r\n", $headerData);
-        $headers                    = [];
+        list($headerData, $body) = explode("\r\n\r\n", $responseText, 2);
+        $headerData = explode("\r\n", $headerData);
+        $headers = [];
         foreach ( $headerData as $line )
         {
-            $line               = trim($line);
+            $line = trim($line);
             if ( strpos($line, ':') === false )
             {
-                $headers[$line]     = $line;
+                $headers[$line] = $line;
                 continue;
             }
-            list($name, $text)  = explode(':', trim($line), 2);
-            $headers[trim($name)]     = trim($text);
+            list($name, $text) = explode(':', trim($line), 2);
+            $headers[trim($name)] = trim($text);
         }
         return [$headers, $body];
     }
-
     /**
      * @param $entity
      * @return string
      */
     protected function getUrl($entity)
     {
-        $entity         = preg_replace('/^\//', '', $entity);
-        $this->curlUrl  = $this->serviceUrl . $entity;
-
+        $entity = preg_replace('/^\//', '', $entity);
+        $this->curlUrl = $this->serviceUrl . $entity;
         if ( $this->method === 'GET' && ! empty($this->data) )
         {
             $this->curlUrl = rtrim($this->curlUrl, '?') . '?' . http_build_query($this->data);
         }
         return $this->curlUrl;
     }
-
     /**
      * @return array
      */
     protected function getHeaders()
     {
-        $types      = [
-            'json'      => 'application/json',
-            'xml'       => 'application/xml',
-            'png'       => 'image/png',
-            'any'       => '*/*',
+        $types = [
+            'json' => 'application/json',
+            'xml' => 'application/xml',
+            'png' => 'image/png',
+            'any' => '*/*',
         ];
         $this->header('Accept', $types[$this->format]);
-        $types['any']   = 'application/x-www-form-urlencoded';
+        $types['any'] = 'application/x-www-form-urlencoded';
         $this->header('Content-Type', $types[$this->format]);
         if ( $this->accessToken )
         {
@@ -434,4 +386,3 @@ class RestClient
         return $headers;
     }
 }
-
