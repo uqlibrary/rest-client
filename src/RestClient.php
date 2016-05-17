@@ -67,6 +67,9 @@ class RestClient
     /** @var RestResponse */
     protected $response     = null;
 
+    /** @var bool */
+    protected $ignoreErrors = false;
+
     /** @var array */
     protected $formats      = [
         'json'      => [['application/json', 'application/x-json'], 'application/json'],
@@ -155,10 +158,11 @@ class RestClient
      */
     public function reset()
     {
-        $this->data     = [];
-        $this->method   = 'GET';
-        $this->curlObj  = null;
-        $this->response = null;
+        $this->data         = [];
+        $this->method       = 'GET';
+        $this->curlObj      = null;
+        $this->response     = null;
+        $this->ignoreErrors = false;
         $this->format('json');
         $this->header('X-Api-Version', '1.0');
         return $this;
@@ -226,7 +230,7 @@ class RestClient
     }
 
     /**
-     * @param $verbose
+     * @param bool $verbose
      *
      * @return $this
      */
@@ -237,6 +241,17 @@ class RestClient
         return $this;
     }
 
+    /**
+     * @param bool $ignore
+     *
+     * @return $this
+     */
+    public function ignoreErrors($ignore=true)
+    {
+        Assert($ignore)->boolean();
+        $this->ignoreErrors = $ignore;
+        return $this;
+    }
     /**
      * @param $exception
      *
@@ -287,12 +302,40 @@ class RestClient
 
     /**
      * @param $entity
-     * @return mixed|null
+     * @return string|null
      * @throws \Exception
      */
     public function sendRequest($entity=null)
     {
         $result = $this
+            ->buildRequest($entity)
+            ->curlExec();
+        $this->reset();
+        return $result;
+    }
+
+    /**
+     * @param $entity
+     * @return mixed|null
+     * @throws \Exception
+     */
+    public function getRawRequest($entity=null)
+    {
+        $this
+            ->ignoreErrors(true)
+            ->setCurlOpt(CURLINFO_HEADER_OUT, true)
+            ->buildRequest($entity)
+            ->curlExec();
+        return $this->getCurlInfo(CURLINFO_HEADER_OUT);
+    }
+
+    /**
+     * @param string $entity
+     * @return $this
+     */
+    protected function buildRequest($entity=null)
+    {
+        $this
             ->setCurlOpt(CURLOPT_URL, $this->getUrl($entity))
             ->setCurlOpt(CURLOPT_HTTPHEADER, $this->getHeaders())
             ->setCurlOpt(CURLOPT_HEADER, 1)
@@ -304,10 +347,8 @@ class RestClient
             ->setCurlOpt(CURLOPT_ENCODING, '')
             ->setCurlBasicAuth()
             ->setCurlCookies()
-            ->setCurlData()
-            ->curlExec();
-        $this->reset();
-        return $result;
+            ->setCurlData();
+        return $this;
     }
 
     /**
@@ -320,6 +361,15 @@ class RestClient
         $this->curlObj = is_null($this->curlObj) ? curl_init() : $this->curlObj;
         curl_setopt($this->curlObj, $opt, $val);
         return $this;
+    }
+
+    /**
+     * @param int $opt
+     * @return mixed
+     */
+    protected function getCurlInfo($opt)
+    {
+        return curl_getinfo($this->curlObj, $opt);
     }
 
     /**
@@ -412,7 +462,7 @@ class RestClient
         $curlError          = curl_error($this->curlObj);
         $curlErrNo          = curl_errno($this->curlObj);
         $this->response     = $this->parseResponse($response, $httpCode, $curlError, $curlErrNo);
-        if ( $this->response->isError() )
+        if ( ! $this->ignoreErrors && $this->response->isError() )
         {
             $exceptionType      = $this->exceptionType;
             throw new $exceptionType($this->response->getNotification(), $this->response->getHttpStatusCode(), null, $this->response);
