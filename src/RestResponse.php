@@ -164,4 +164,17 @@ class RestResponse implements \JsonSerializable
     {
         return $this->curlErrorNo || $this->status > 300;
     }
+
+    /**
+     * @return string
+     */
+    public function getNotification()
+    {
+        $httpMessages = preg_grep('/^HTTP/', array_keys($this->_meta_data['headers']));
+        if ( empty($httpMessages) )
+        {
+            return $this->status;
+        }
+        return $httpMessages[0];
+    }
 }
