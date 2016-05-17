@@ -18,4 +18,14 @@ trait RestClientTrait
         $this->restClient = $restClient;
         return $this;
     }
+
+    /**
+     * Gets a client.
+     *
+     * @return RestClient
+     */
+    public function getCache()
+    {
+        return $this->restClient;
+    }
 }
