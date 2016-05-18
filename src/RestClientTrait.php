@@ -24,7 +24,7 @@ trait RestClientTrait
      *
      * @return RestClient
      */
-    public function getCache()
+    public function getRestClient()
     {
         return $this->restClient;
     }
