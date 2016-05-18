@@ -546,6 +546,10 @@ class RestClient
                 break;
             }
         }
+
+        // Split on ";" to remove charset
+        $defaultContentType = substr($defaultContentType, 0, strpos($defaultContentType, ";"));
+
         foreach ( $this->formats as $type => $contentTypes )
         {
             foreach ( $contentTypes[0] as $contentType )
